@@ -71,3 +71,49 @@ else()
         "File: ${PE_FILE}"
     )
 endif()
+
+# Verify no imports (shellcode must be fully self-contained)
+execute_process(
+    COMMAND ${LLVM_READOBJ} --coff-imports ${PE_FILE}
+    OUTPUT_VARIABLE IMPORTS_OUTPUT
+    ERROR_VARIABLE IMPORTS_ERROR
+    RESULT_VARIABLE IMPORTS_RESULT
+)
+
+if(NOT IMPORTS_RESULT EQUAL 0)
+    message(FATAL_ERROR "llvm-readobj --coff-imports failed: ${IMPORTS_ERROR}")
+endif()
+
+string(FIND "${IMPORTS_OUTPUT}" "Import {" HAS_IMPORTS)
+if(NOT HAS_IMPORTS EQUAL -1)
+    message(FATAL_ERROR
+        "PE verification FAILED!\n"
+        "PE has imports but shellcode must be fully self-contained.\n"
+        "Imports found:\n${IMPORTS_OUTPUT}\n"
+        "File: ${PE_FILE}"
+    )
+endif()
+message(STATUS "PE verification PASSED: no imports")
+
+# Verify no exports
+execute_process(
+    COMMAND ${LLVM_READOBJ} --coff-exports ${PE_FILE}
+    OUTPUT_VARIABLE EXPORTS_OUTPUT
+    ERROR_VARIABLE EXPORTS_ERROR
+    RESULT_VARIABLE EXPORTS_RESULT
+)
+
+if(NOT EXPORTS_RESULT EQUAL 0)
+    message(FATAL_ERROR "llvm-readobj --coff-exports failed: ${EXPORTS_ERROR}")
+endif()
+
+string(FIND "${EXPORTS_OUTPUT}" "Export {" HAS_EXPORTS)
+if(NOT HAS_EXPORTS EQUAL -1)
+    message(FATAL_ERROR
+        "PE verification FAILED!\n"
+        "PE has exports but shellcode must not export symbols.\n"
+        "Exports found:\n${EXPORTS_OUTPUT}\n"
+        "File: ${PE_FILE}"
+    )
+endif()
+message(STATUS "PE verification PASSED: no exports")
