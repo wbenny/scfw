@@ -13,6 +13,7 @@
 
 #include <phnt_windows.h>
 #include <phnt.h>
+#include <ntzwapi.h>
 
 #include "../../runtime/fnv1a.h"
 
